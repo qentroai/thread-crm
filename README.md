@@ -1,3 +1,4 @@
+
 # Thread — private CRM
 
 A single-user CRM for tracking sales leads from first contact through to
@@ -96,3 +97,6 @@ what it's not okay to do is skip running the RLS policies from
   queue logs it as an actual `message` interaction; **Discard** marks the
   task `discarded` and it disappears from the queue. Nothing is sent
   without that explicit approval step.
+
+# thread-crm
+ c733d7f813e90b14fe53e8942b8b1c14996fc48a
