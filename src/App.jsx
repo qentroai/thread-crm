@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from "react";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import Login from "./components/Login";
+import UpdatePassword from "./components/UpdatePassword";
 import Sidebar from "./components/Sidebar";
 import Dashboard from "./components/Dashboard";
 import LeadsList from "./components/LeadsList";
@@ -93,7 +94,7 @@ function CrmApp() {
         onNewLead={() => setShowNewLead(true)}
       />
 
-      <main className="flex-1 overflow-auto relative z-10">
+      <main className="flex-1 overflow-auto relative z-10 pt-14 md:pt-0">
         {loading && (
           <div className="max-w-5xl mx-auto px-8 py-8 text-sm" style={{ color: TEXT_MUTED }}>
             Loading…
@@ -133,7 +134,7 @@ function CrmApp() {
 }
 
 function Gate() {
-  const { session, loading } = useAuth();
+  const { session, loading, isPasswordRecovery, clearPasswordRecovery } = useAuth();
 
   if (loading) {
     return (
@@ -141,6 +142,10 @@ function Gate() {
         Loading…
       </div>
     );
+  }
+
+  if (isPasswordRecovery) {
+    return <UpdatePassword onDone={clearPasswordRecovery} />;
   }
 
   return session ? <CrmApp /> : <Login />;

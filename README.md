@@ -16,10 +16,11 @@ Supabase directly.
    you can ever read or write your own rows.
 3. Under **Authentication → Providers**, make sure **Email** is enabled
    (it is by default).
-4. Under **Authentication → Users**, click **Add user** and create yourself
-   an account with an email + password. This app has no public sign-up
-   screen on purpose — it's single-user, and you create that one user
-   directly from the dashboard.
+4. Create your account either from the app's own **Sign up** link on the
+   login screen, or from **Authentication → Users → Add user** in the
+   dashboard — both work. RLS means every user only ever sees their own
+   data, so if this is deployed publicly, anyone who signs up gets their
+   own empty, isolated CRM.
 
 ## 2. Configure environment variables
 

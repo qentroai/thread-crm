@@ -1,13 +1,17 @@
 import React, { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { supabase } from "../lib/supabaseClient";
 import { ACCENT, ACCENT_DIM, BG, BORDER, SURFACE, SURFACE_2, TEXT, TEXT_FAINT, TEXT_MUTED } from "../lib/constants";
 
 export default function Login() {
   const { signIn } = useAuth();
+  const [mode, setMode] = useState("signin"); // "signin" | "forgot" | "signup"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
+  const [signupSent, setSignupSent] = useState(false);
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -16,6 +20,35 @@ export default function Login() {
     const { error } = await signIn(email, password);
     setSubmitting(false);
     if (error) setError(error.message);
+  }
+
+  async function handleResetRequest(e) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin,
+    });
+    setSubmitting(false);
+    if (error) setError(error.message);
+    else setResetSent(true);
+  }
+
+  async function handleSignUp(e) {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    const { error } = await supabase.auth.signUp({ email, password });
+    setSubmitting(false);
+    if (error) setError(error.message);
+    else setSignupSent(true);
+  }
+
+  function backToSignIn() {
+    setMode("signin");
+    setError(null);
+    setResetSent(false);
+    setSignupSent(false);
   }
 
   return (
@@ -40,7 +73,7 @@ export default function Login() {
       </div>
 
       <form
-        onSubmit={handleSubmit}
+        onSubmit={mode === "signin" ? handleSubmit : mode === "forgot" ? handleResetRequest : handleSignUp}
         className="relative z-10 w-full max-w-sm rounded-xl p-7"
         style={{ backgroundColor: SURFACE, border: `1px solid ${BORDER}` }}
       >
@@ -59,53 +92,183 @@ export default function Login() {
           </div>
         </div>
         <div className="text-[11px] mb-6" style={{ color: TEXT_FAINT }}>
-          private CRM — sign in to continue
+          {mode === "signin" ? "private CRM — sign in to continue" : mode === "forgot" ? "reset your password" : "create your account"}
         </div>
 
-        <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
-          Email
-        </label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          autoFocus
-          className="w-full text-sm rounded-md px-3 py-2 mb-3"
-          style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
-        />
+        {mode === "signin" ? (
+          <>
+            <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoFocus
+              className="w-full text-sm rounded-md px-3 py-2 mb-3"
+              style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
+            />
 
-        <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
-          Password
-        </label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          className="w-full text-sm rounded-md px-3 py-2 mb-4"
-          style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
-        />
+            <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full text-sm rounded-md px-3 py-2 mb-2"
+              style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
+            />
 
-        {error && (
-          <div className="text-xs mb-3 px-3 py-2 rounded-md" style={{ backgroundColor: "#E8674A1a", color: "#E8674A" }}>
-            {error}
-          </div>
+            <button
+              type="button"
+              onClick={() => {
+                setMode("forgot");
+                setError(null);
+              }}
+              className="text-xs block mb-1.5 hover:opacity-80"
+              style={{ color: ACCENT }}
+            >
+              Forgot password?
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                setMode("signup");
+                setError(null);
+              }}
+              className="text-xs block mb-4 hover:opacity-80"
+              style={{ color: TEXT_MUTED }}
+            >
+              Don't have an account? <span style={{ color: ACCENT }}>Sign up</span>
+            </button>
+
+            {error && (
+              <div className="text-xs mb-3 px-3 py-2 rounded-md" style={{ backgroundColor: "#E8674A1a", color: "#E8674A" }}>
+                {error}
+              </div>
+            )}
+
+            <button
+              type="submit"
+              disabled={submitting}
+              className="w-full text-sm font-medium px-3 py-2 rounded-md disabled:opacity-50"
+              style={{ backgroundColor: ACCENT, color: "#04141A", boxShadow: `0 0 16px ${ACCENT}55` }}
+            >
+              {submitting ? "Signing in…" : "Sign in"}
+            </button>
+          </>
+        ) : mode === "forgot" ? (
+          <>
+            {resetSent ? (
+              <div className="text-sm mb-4 px-3 py-2 rounded-md" style={{ backgroundColor: ACCENT + "1a", color: ACCENT }}>
+                Check your email for a reset link.
+              </div>
+            ) : (
+              <>
+                <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full text-sm rounded-md px-3 py-2 mb-4"
+                  style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
+                />
+
+                {error && (
+                  <div className="text-xs mb-3 px-3 py-2 rounded-md" style={{ backgroundColor: "#E8674A1a", color: "#E8674A" }}>
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full text-sm font-medium px-3 py-2 rounded-md disabled:opacity-50"
+                  style={{ backgroundColor: ACCENT, color: "#04141A", boxShadow: `0 0 16px ${ACCENT}55` }}
+                >
+                  {submitting ? "Sending…" : "Send reset link"}
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={backToSignIn}
+              className="w-full text-xs mt-4 hover:opacity-80"
+              style={{ color: TEXT_MUTED }}
+            >
+              ← Back to sign in
+            </button>
+          </>
+        ) : (
+          <>
+            {signupSent ? (
+              <div className="text-sm mb-4 px-3 py-2 rounded-md" style={{ backgroundColor: ACCENT + "1a", color: ACCENT }}>
+                Check your email to confirm your account before signing in.
+              </div>
+            ) : (
+              <>
+                <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoFocus
+                  className="w-full text-sm rounded-md px-3 py-2 mb-3"
+                  style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
+                />
+
+                <label className="text-xs font-medium mb-1 block" style={{ color: TEXT_MUTED }}>
+                  Password
+                </label>
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full text-sm rounded-md px-3 py-2 mb-4"
+                  style={{ border: `1px solid ${BORDER}`, backgroundColor: SURFACE_2, color: TEXT }}
+                />
+
+                {error && (
+                  <div className="text-xs mb-3 px-3 py-2 rounded-md" style={{ backgroundColor: "#E8674A1a", color: "#E8674A" }}>
+                    {error}
+                  </div>
+                )}
+
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="w-full text-sm font-medium px-3 py-2 rounded-md disabled:opacity-50"
+                  style={{ backgroundColor: ACCENT, color: "#04141A", boxShadow: `0 0 16px ${ACCENT}55` }}
+                >
+                  {submitting ? "Creating account…" : "Sign up"}
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              onClick={backToSignIn}
+              className="w-full text-xs mt-4 hover:opacity-80"
+              style={{ color: TEXT_MUTED }}
+            >
+              ← Back to sign in
+            </button>
+          </>
         )}
-
-        <button
-          type="submit"
-          disabled={submitting}
-          className="w-full text-sm font-medium px-3 py-2 rounded-md disabled:opacity-50"
-          style={{ backgroundColor: ACCENT, color: "#04141A", boxShadow: `0 0 16px ${ACCENT}55` }}
-        >
-          {submitting ? "Signing in…" : "Sign in"}
-        </button>
-
-        <div className="text-[11px] mt-4 leading-relaxed" style={{ color: TEXT_FAINT }}>
-          This is a single-user app. Create your account from the Supabase dashboard
-          (Authentication → Users → Add user) — see the README.
-        </div>
       </form>
     </div>
   );
